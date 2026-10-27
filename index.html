@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>귀뚜라미 유가 동향</title>
+  <style>
+    :root {
+      --ink: #19313b;
+      --muted: #60747a;
+      --line: #d7e1e1;
+      --paper: #f4f7f5;
+      --surface: #ffffff;
+      --teal: #14766f;
+      --teal-soft: #e7f3f0;
+      --blue: #3c789c;
+      --blue-soft: #eaf2f6;
+      --rust: #b74e35;
+      --rust-soft: #fbefea;
+      --gold: #c38d35;
+      --shadow: 0 10px 28px rgba(25, 49, 59, .06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .page { width: min(1240px, calc(100% - 40px)); margin: 0 auto; padding: 32px 0 56px; }
+    .hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 23px; }
+    .eyebrow { margin: 0 0 8px; color: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: .13em; }
+    h1 { margin: 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.2; letter-spacing: -.04em; }
+    .subhead { margin: 9px 0 0; color: var(--muted); font-size: 14px; }
+    .asof { flex: 0 0 auto; color: var(--muted); font-size: 13px; text-align: right; }
+    .asof strong { display: block; color: var(--ink); font-size: 17px; font-weight: 600; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; align-items: end; gap: 16px 24px;
+      padding: 17px 20px; margin-bottom: 16px; background: var(--surface);
+      border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+    }
+    .field { display: grid; gap: 6px; min-width: 170px; }
+    .field label { color: var(--muted); font-size: 12px; font-weight: 700; }
+    select {
+      min-height: 42px; width: 100%; padding: 8px 34px 8px 12px;
+      border: 1px solid #b9cbcb; border-radius: 7px; background: #fff; color: var(--ink);
+      font: inherit; font-size: 15px;
+    }
+    select:focus-visible { outline: 3px solid rgba(20,118,111,.22); border-color: var(--teal); }
+    .periods { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+    .period-chip { padding: 7px 11px; border-radius: 6px; background: var(--blue-soft); color: #315e78; font-size: 12px; white-space: nowrap; }
+    .period-chip.current { background: var(--teal-soft); color: #12625c; }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .metric {
+      min-height: 128px; padding: 18px 20px; background: var(--surface);
+      border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+    }
+    .metric-label { margin: 0 0 11px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .metric-value { display: block; font-size: clamp(24px, 3vw, 32px); font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -.04em; line-height: 1.1; }
+    .metric-note { margin: 9px 0 0; color: var(--muted); font-size: 12px; }
+    .metric-change.up .metric-value, .metric-change.up .metric-note { color: var(--rust); }
+    .metric-change.down .metric-value, .metric-change.down .metric-note { color: var(--blue); }
+    .metric-change.flat .metric-value { color: var(--ink); }
+    .section { margin-top: 28px; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 12px; }
+    h2 { margin: 0; font-size: 19px; letter-spacing: -.025em; }
+    .section-note { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .chart-shell { padding: 7px 0 0; }
+    .chart-scroll { width: 100%; overflow-x: auto; }
+    svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+    #trendChart { min-width: 700px; }
+    #regionChart { min-width: 820px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 8px 0 3px; color: var(--muted); font-size: 12px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-mark { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    .legend-mark.recent { background: var(--teal); }
+    .legend-mark.previous { background: var(--surface); border: 2px solid #899a9e; }
+    .region-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(310px, .84fr); gap: 28px; align-items: start; }
+    .table-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+    th { padding: 11px 10px; color: var(--muted); font-size: 11px; font-weight: 700; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+    td { padding: 11px 10px; border-bottom: 1px solid #e7eded; white-space: nowrap; }
+    th.num, td.num { text-align: right; }
+    tbody tr.selected { background: #eff7f5; }
+    .region-name { font-weight: 600; }
+    .region-code { margin-left: 6px; color: #829296; font-size: 11px; }
+    .delta-up { color: var(--rust); font-weight: 600; }
+    .delta-down { color: var(--blue); font-weight: 600; }
+    .empty { color: #849397; }
+    .method {
+      margin-top: 34px; padding-top: 15px; border-top: 1px solid var(--line);
+      color: var(--muted); font-size: 12px;
+    }
+    .method p { margin: 3px 0; }
+    .source-line { margin-top: 8px !important; }
+    .mail-card { margin-top: 28px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+    .mail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 16px; margin-top: 16px; }
+    .mail-field { display: grid; gap: 6px; }
+    .mail-field.full { grid-column: 1 / -1; }
+    .mail-field label { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .mail-field input, .mail-field textarea { width: 100%; padding: 10px 12px; border: 1px solid #b9cbcb; border-radius: 7px; color: var(--ink); background: white; font: inherit; }
+    .mail-field textarea { min-height: 150px; resize: vertical; }
+    .mail-actions { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    .mail-actions button { min-height: 42px; padding: 8px 18px; border: 0; border-radius: 7px; background: var(--teal); color: white; font: inherit; font-weight: 700; cursor: pointer; }
+    .mail-actions button:disabled { opacity: .6; cursor: wait; }
+    .mail-status { color: var(--muted); font-size: 13px; }
+    .connection-warning { display: none; margin: 0 0 16px; padding: 13px 16px; border: 1px solid #e5b2a7; border-radius: 8px; background: var(--rust-soft); color: #813b2b; }
+    @media (max-width: 820px) {
+      .page { width: min(100% - 28px, 680px); padding-top: 24px; }
+      .hero { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .asof { text-align: left; }
+      .toolbar { align-items: stretch; gap: 12px; padding: 15px; }
+      .field { flex: 1 1 180px; }
+      .periods { margin-left: 0; }
+      .metrics { grid-template-columns: 1fr; gap: 10px; }
+      .metric { min-height: 0; padding: 16px; }
+      .metric-value { font-size: 27px; }
+      .region-grid { grid-template-columns: 1fr; gap: 21px; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .mail-grid { grid-template-columns: 1fr; }
+      .mail-field.full { grid-column: auto; }
+    }
+    @media (max-width: 430px) {
+      .page { width: calc(100% - 22px); }
+      .period-chip { white-space: normal; }
+      .field { flex-basis: 100%; }
+      table { min-width: 660px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="connection-warning" id="connectionWarning" role="alert">대시보드 서버에 연결할 수 없습니다. PowerShell에서 <code>python app.py</code>를 실행한 뒤 <strong>http://127.0.0.1:8000</strong>으로 접속해 주세요. 이 HTML 파일을 직접 열면 자료를 불러올 수 없습니다.</div>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Kiturami · ENERGY PRICE MONITOR</p>
+        <h1>유가 동향</h1>
+        <p class="subhead">전국·시도별 일평균 가격과 직전 7일 대비 변화</p>
+      </div>
+      <div class="asof">자료 기준일 <strong id="asOf">자료 확인 중</strong><br><span id="refreshStatus" aria-live="polite">서버에서 자료를 불러오고 있습니다.</span></div>
+    </header>
+
+    <section class="toolbar" aria-label="조회 조건">
+      <div class="field">
+        <label for="productSelect">유종</label>
+        <select id="productSelect" aria-label="유종 선택"></select>
+      </div>
+      <div class="field">
+        <label for="regionSelect">지역</label>
+        <select id="regionSelect" aria-label="전국 또는 시도 선택"></select>
+      </div>
+      <div class="periods" aria-label="비교 기간">
+        <span class="period-chip" id="previousPeriod"></span>
+        <span class="period-chip current" id="recentPeriod"></span>
+      </div>
+    </section>
+
+    <section class="metrics" id="metrics" aria-label="선택 조건의 주요 지표" aria-live="polite">
+      <article class="metric">
+        <p class="metric-label">최근 7일 일평균 가격</p>
+        <strong class="metric-value" id="recentValue">—</strong>
+        <p class="metric-note" id="recentNote"></p>
+      </article>
+      <article class="metric">
+        <p class="metric-label">직전 7일 일평균 가격</p>
+        <strong class="metric-value" id="previousValue">—</strong>
+        <p class="metric-note" id="previousNote"></p>
+      </article>
+      <article class="metric metric-change flat" id="changeMetric">
+        <p class="metric-label">직전 기간 대비</p>
+        <strong class="metric-value" id="changeValue">—</strong>
+        <p class="metric-note" id="changeNote"></p>
+      </article>
+    </section>
+
+    <section class="section" aria-labelledby="trendHeading">
+      <div class="section-head">
+        <div>
+          <h2 id="trendHeading">선택 지역의 일별 가격</h2>
+          <p class="section-note" id="trendCaption"></p>
+        </div>
+      </div>
+      <div class="chart-shell chart-scroll">
+        <svg id="trendChart" class="chart" role="img" aria-label="선택 유종과 지역의 14일 가격 추이"></svg>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="regionHeading">
+      <div class="section-head">
+        <div>
+          <h2 id="regionHeading">시도별 7일 평균가격 비교</h2>
+          <p class="section-note" id="regionCaption"></p>
+        </div>
+        <div class="legend" aria-label="차트 범례">
+          <span class="legend-item"><i class="legend-mark previous" aria-hidden="true"></i>직전 7일</span>
+          <span class="legend-item"><i class="legend-mark recent" aria-hidden="true"></i>최근 7일</span>
+        </div>
+      </div>
+      <div class="chart-shell chart-scroll">
+        <svg id="regionChart" class="chart" role="img" aria-label="시도별 최근 및 직전 7일 평균가격 비교"></svg>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="tableHeading">
+      <div class="section-head">
+        <div>
+          <h2 id="tableHeading">시도별 가격표</h2>
+          <p class="section-note">최근 7일 평균가격이 높은 순으로 표시</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">시도</th>
+              <th scope="col" class="num">최근 7일 평균<br>(원/L)</th>
+              <th scope="col" class="num">직전 7일 평균<br>(원/L)</th>
+              <th scope="col" class="num">증감액<br>(원/L)</th>
+              <th scope="col" class="num">증감률</th>
+            </tr>
+          </thead>
+          <tbody id="regionTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mail-card" aria-labelledby="mailHeading">
+      <div class="section-head">
+        <div>
+          <h2 id="mailHeading">메일 작성</h2>
+          <p class="section-note">받는 사람과 제목, 본문을 작성한 뒤 전송하세요. 메일은 작성한 내용만 전송됩니다.</p>
+        </div>
+      </div>
+      <form id="emailForm">
+        <div class="mail-grid">
+          <div class="mail-field">
+            <label for="mailRecipient">받는 사람 이메일</label>
+            <input id="mailRecipient" type="email" autocomplete="email" placeholder="name@example.com" required maxlength="254">
+          </div>
+          <div class="mail-field">
+            <label for="mailSubject">제목</label>
+            <input id="mailSubject" type="text" required maxlength="200" placeholder="메일 제목">
+          </div>
+          <div class="mail-field full">
+            <label for="mailBody">본문</label>
+            <textarea id="mailBody" maxlength="20000" placeholder="메일 내용을 작성하세요."></textarea>
+          </div>
+        </div>
+        <div class="mail-actions">
+          <button id="sendMailButton" type="submit">메일 전송</button>
+          <span class="mail-status" id="mailStatus" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <footer class="method">
+      <p><strong>계산 기준</strong> 각 기간의 일별 가격 7개를 동일 가중치로 산술평균합니다. 7개 날짜가 모두 있을 때만 평균을 표시합니다.</p>
+      <p>증감액 = 최근 7일 평균 − 직전 7일 평균 · 증감률 = 증감액 ÷ 직전 7일 평균</p>
+      <p class="source-line">원자료: 유가_기간비교.xlsx의 전국 일별·지역별 일별 시트 · 가격 단위: 원/L</p>
+    </footer>
+  </main>
+
+<script>
+    (() => {
+      "use strict";
+      let DATA = null;
+      const NS = "http://www.w3.org/2000/svg";
+      const productSelect = document.getElementById("productSelect");
+      const regionSelect = document.getElementById("regionSelect");
+      const trendSvg = document.getElementById("trendChart");
+      const regionSvg = document.getElementById("regionChart");
+      const money = new Intl.NumberFormat("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const whole = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 });
+
+      function el(tag, attrs = {}, text = null) {
+        const node = document.createElementNS(NS, tag);
+        for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+        if (text !== null) node.textContent = text;
+        return node;
+      }
+      function fmtPrice(value) { return value === null || !Number.isFinite(value) ? "자료 없음" : money.format(value) + "원/L"; }
+      function fmtNumber(value) { return value === null || !Number.isFinite(value) ? "—" : money.format(value); }
+      function fmtDelta(value) {
+        if (value === null || !Number.isFinite(value)) return "자료 없음";
+        const rounded = Math.round(value * 100) / 100;
+        if (rounded === 0) return money.format(0);
+        return (rounded > 0 ? "+" : "−") + money.format(Math.abs(rounded));
+      }
+      function fmtRate(value) {
+        if (value === null || !Number.isFinite(value)) return "자료 없음";
+        const pct = Math.round(value * 10000) / 100;
+        if (Math.abs(pct) < 0.005) return "0.00%";
+        return (pct > 0 ? "+" : "−") + money.format(Math.abs(pct)) + "%";
+      }
+      function groupMean(rows) {
+        const byDate = new Map(rows.map(row => [row.date, row.price]));
+        if (byDate.size !== 7 || rows.length !== 7) return null;
+        return [...byDate.values()].reduce((total, value) => total + value, 0) / 7;
+      }
+      function periodRows(rows, period) { return rows.filter(row => row.period === period); }
+      function selectedDailyRows(product, regionCode) {
+        if (regionCode === "00") return DATA.national.filter(row => row.product === product);
+        return DATA.regional.filter(row => row.product === product && row.code === regionCode);
+      }
+      function periodAverage(rows, period) { return groupMean(periodRows(rows, period)); }
+      function selectedRegionName() {
+        if (regionSelect.value === "00") return "전국";
+        return DATA.regions.find(region => region.code === regionSelect.value)?.name || "선택 지역";
+      }
+      function metricText(id, text) { document.getElementById(id).textContent = text; }
+
+      function drawTrend(rows, product, regionName) {
+        trendSvg.replaceChildren();
+        const title = el("title", {}, `${regionName} ${product} 14일 가격 추이`);
+        const desc = el("desc", {}, "직전 7일과 최근 7일의 일별 평균가격을 원/L로 표시합니다.");
+        trendSvg.append(title, desc);
+        trendSvg.setAttribute("aria-label", `${regionName} ${product} 일별 가격 추이, 원/L`);
+        const sorted = [...rows].sort((a, b) => a.date.localeCompare(b.date));
+        if (sorted.length !== 14) {
+          trendSvg.setAttribute("viewBox", "0 0 1000 260");
+          trendSvg.append(el("text", { x: 500, y: 130, "text-anchor": "middle", fill: "#60747a", "font-size": 15 }, "14일 일별 자료가 충분하지 않습니다."));
+          return;
+        }
+        const width = 1000, height = 340, left = 78, right = 24, top = 38, bottom = 58;
+        const plotW = width - left - right, plotH = height - top - bottom;
+        const values = sorted.map(row => row.price);
+        const lo = Math.min(...values), hi = Math.max(...values);
+        const pad = Math.max((hi - lo) * .18, 5);
+        const min = lo - pad, max = hi + pad;
+        const x = index => left + index * plotW / (sorted.length - 1);
+        const y = value => top + (max - value) * plotH / (max - min);
+        const split = (x(6) + x(7)) / 2;
+        trendSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        trendSvg.append(
+          el("rect", { x: left, y: top, width: split - left, height: plotH, fill: "#f0f5f4" }),
+          el("rect", { x: split, y: top, width: left + plotW - split, height: plotH, fill: "#f0f5f8" })
+        );
+        trendSvg.append(
+          el("text", { x: (left + split) / 2, y: 20, "text-anchor": "middle", fill: "#60747a", "font-size": 12 }, "직전 7일"),
+          el("text", { x: (split + left + plotW) / 2, y: 20, "text-anchor": "middle", fill: "#14766f", "font-size": 12, "font-weight": 700 }, "최근 7일")
+        );
+        for (let i = 0; i <= 4; i++) {
+          const value = min + (max - min) * i / 4;
+          const yy = y(value);
+          trendSvg.append(
+            el("line", { x1: left, y1: yy, x2: left + plotW, y2: yy, stroke: "#dce5e5", "stroke-width": 1 }),
+            el("text", { x: left - 12, y: yy + 4, "text-anchor": "end", fill: "#60747a", "font-size": 12 }, whole.format(value))
+          );
+        }
+        trendSvg.append(
+          el("line", { x1: split, y1: top, x2: split, y2: top + plotH, stroke: "#aab9ba", "stroke-width": 1, "stroke-dasharray": "4 5" }),
+          el("text", { x: 19, y: top + plotH / 2, transform: `rotate(-90 19 ${top + plotH / 2})`, "text-anchor": "middle", fill: "#60747a", "font-size": 12 }, "일평균 가격 (원/L)")
+        );
+        const d = sorted.map((row, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(row.price).toFixed(1)}`).join(" ");
+        trendSvg.append(el("path", { d, fill: "none", stroke: "#14766f", "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+        sorted.forEach((row, index) => {
+          const circle = el("circle", { cx: x(index), cy: y(row.price), r: 4.4, fill: index >= 7 ? "#14766f" : "#fff", stroke: "#14766f", "stroke-width": 2 });
+          circle.append(el("title", {}, `${row.date} · ${regionName} · ${fmtPrice(row.price)}`));
+          trendSvg.append(circle);
+        });
+        [0, 3, 6, 7, 10, 13].forEach(index => {
+          const [year, month, day] = sorted[index].date.split("-");
+          const label = `${Number(month)}/${Number(day)}`;
+          trendSvg.append(el("text", { x: x(index), y: top + plotH + 22, "text-anchor": "middle", fill: "#60747a", "font-size": 12 }, label));
+        });
+        trendSvg.append(el("text", { x: left + plotW / 2, y: height - 8, "text-anchor": "middle", fill: "#60747a", "font-size": 12 }, "기준일"));
+      }
+
+      function regionSummaries(product) {
+        return DATA.regions.map(region => {
+          const rows = DATA.regional.filter(row => row.product === product && row.code === region.code);
+          const current = periodAverage(rows, "recent");
+          const previous = periodAverage(rows, "previous");
+          return { ...region, current, previous, delta: current === null || previous === null ? null : current - previous,
+            rate: current === null || previous === null || previous === 0 ? null : (current - previous) / previous };
+        }).sort((a, b) => (b.current ?? -Infinity) - (a.current ?? -Infinity));
+      }
+
+      function drawRegions(summaries, product, selectedCode) {
+        regionSvg.replaceChildren();
+        regionSvg.append(
+          el("title", {}, `${product} 시도별 최근 7일과 직전 7일 평균가격 비교`),
+          el("desc", {}, "시도별 평균가격을 공통 가로축에 표시합니다. 빈 원은 직전 기간, 채운 원은 최근 기간입니다.")
+        );
+        regionSvg.setAttribute("aria-label", `${product} 시도별 두 기간 가격 비교, 원/L`);
+        const width = 1080, rowH = 25, top = 36, bottom = 57, height = top + rowH * summaries.length + bottom;
+        regionSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        const left = 145, right = 34, plotW = width - left - right;
+        const all = summaries.flatMap(row => [row.current, row.previous]).filter(Number.isFinite);
+        if (!all.length) return;
+        const minValue = Math.min(...all), maxValue = Math.max(...all);
+        const pad = Math.max((maxValue - minValue) * .12, 8);
+        const min = minValue - pad, max = maxValue + pad;
+        const x = value => left + (value - min) * plotW / (max - min);
+        for (let tick = 0; tick <= 4; tick++) {
+          const value = min + (max - min) * tick / 4;
+          const xx = x(value);
+          regionSvg.append(el("line", { x1: xx, y1: top, x2: xx, y2: top + rowH * summaries.length, stroke: "#e0e8e8", "stroke-width": 1 }));
+        }
+        summaries.forEach((row, index) => {
+          const cy = top + index * rowH + rowH / 2;
+          if (row.code === selectedCode) regionSvg.append(el("rect", { x: 0, y: cy - rowH / 2 + 1, width, height: rowH - 1, fill: "#eaf4f1" }));
+          regionSvg.append(el("text", { x: 15, y: cy + 4, fill: row.code === selectedCode ? "#14766f" : "#40565e", "font-size": 12, "font-weight": row.code === selectedCode ? 700 : 400 }, `${row.name}  ${row.code}`));
+          if (Number.isFinite(row.current) && Number.isFinite(row.previous)) {
+            regionSvg.append(el("line", { x1: x(row.previous), y1: cy, x2: x(row.current), y2: cy, stroke: "#9aaeb0", "stroke-width": row.code === selectedCode ? 2.5 : 1.6 }));
+            const oldDot = el("circle", { cx: x(row.previous), cy, r: 5, fill: "#fff", stroke: "#899a9e", "stroke-width": 2 });
+            oldDot.append(el("title", {}, `${row.name} · 직전 7일 · ${fmtPrice(row.previous)}`));
+            const newDot = el("circle", { cx: x(row.current), cy, r: row.code === selectedCode ? 6 : 5, fill: "#14766f", stroke: "#14766f", "stroke-width": 1 });
+            newDot.append(el("title", {}, `${row.name} · 최근 7일 · ${fmtPrice(row.current)}`));
+            regionSvg.append(oldDot, newDot);
+          }
+        });
+        for (let tick = 0; tick <= 4; tick++) {
+          const value = min + (max - min) * tick / 4;
+          const xx = x(value);
+          regionSvg.append(
+            el("line", { x1: xx, y1: top + rowH * summaries.length, x2: xx, y2: top + rowH * summaries.length + 5, stroke: "#809396", "stroke-width": 1 }),
+            el("text", { x: xx, y: top + rowH * summaries.length + 21, "text-anchor": "middle", fill: "#60747a", "font-size": 12 }, whole.format(value))
+          );
+        }
+        regionSvg.append(el("text", { x: left + plotW / 2, y: height - 8, "text-anchor": "middle", fill: "#60747a", "font-size": 12 }, "7일 일평균 가격 (원/L)"));
+      }
+
+      function renderTable(summaries, selectedCode) {
+        const tbody = document.getElementById("regionTable");
+        tbody.replaceChildren();
+        summaries.forEach(row => {
+          const tr = document.createElement("tr");
+          if (row.code === selectedCode) tr.className = "selected";
+          const area = document.createElement("td");
+          const name = document.createElement("span"); name.className = "region-name"; name.textContent = row.name;
+          const code = document.createElement("span"); code.className = "region-code"; code.textContent = row.code;
+          area.append(name, code); tr.append(area);
+          const values = [row.current, row.previous, row.delta];
+          values.forEach((value, index) => {
+            const td = document.createElement("td"); td.className = "num";
+            td.textContent = index < 2 ? fmtNumber(value) : (value === null ? "—" : fmtDelta(value));
+            if (value === null) td.classList.add("empty");
+            if (index === 2 && value !== null) td.classList.add(value > 0 ? "delta-up" : value < 0 ? "delta-down" : "empty");
+            tr.append(td);
+          });
+          const rate = document.createElement("td"); rate.className = "num"; rate.textContent = fmtRate(row.rate);
+          if (row.rate === null) rate.classList.add("empty");
+          else if (row.rate > 0) rate.className += " delta-up";
+          else if (row.rate < 0) rate.className += " delta-down";
+          tr.append(rate); tbody.append(tr);
+        });
+      }
+
+      function update() {
+        const product = productSelect.value;
+        const regionCode = regionSelect.value;
+        const regionName = selectedRegionName();
+        const daily = selectedDailyRows(product, regionCode);
+        const current = periodAverage(daily, "recent");
+        const previous = periodAverage(daily, "previous");
+        const delta = current === null || previous === null ? null : current - previous;
+        const rate = delta === null || previous === 0 ? null : delta / previous;
+
+        metricText("recentValue", fmtPrice(current));
+        metricText("previousValue", fmtPrice(previous));
+        metricText("recentNote", `${regionName} · ${product} · ${DATA.periods.recent.start}~${DATA.periods.recent.end}`);
+        metricText("previousNote", `${regionName} · ${product} · ${DATA.periods.previous.start}~${DATA.periods.previous.end}`);
+        metricText("changeValue", delta === null ? "자료 없음" : `${fmtDelta(delta)}원/L`);
+        metricText("changeNote", rate === null ? "7일 자료를 확인할 수 없습니다." : `${fmtRate(rate)} · 최근 평균 − 직전 평균`);
+        const changeMetric = document.getElementById("changeMetric");
+        changeMetric.classList.remove("up", "down", "flat");
+        changeMetric.classList.add(delta === null || delta === 0 ? "flat" : delta > 0 ? "up" : "down");
+        document.getElementById("trendCaption").textContent = `${regionName} · ${product} · 가격 단위 원/L`;
+        document.getElementById("regionCaption").textContent = `${product} · 빈 원은 직전 7일, 채운 원은 최근 7일 · 선택 지역은 옅은 배경으로 표시`;
+        const summaries = regionSummaries(product);
+        drawTrend(daily, product, regionName);
+        drawRegions(summaries, product, regionCode);
+        renderTable(summaries, regionCode);
+      }
+
+      function applyData(data) {
+        if (!data) return;
+        const selectedProduct = productSelect.value;
+        const selectedRegion = regionSelect.value;
+        DATA = data;
+        productSelect.replaceChildren(); regionSelect.replaceChildren();
+        DATA.products.forEach(product => { const option=document.createElement("option"); option.value=product; option.textContent=product; productSelect.append(option); });
+        const nationwide=document.createElement("option"); nationwide.value="00"; nationwide.textContent="전국"; regionSelect.append(nationwide);
+        DATA.regions.forEach(region => { const option=document.createElement("option"); option.value=region.code; option.textContent=`${region.name} (${region.code})`; regionSelect.append(option); });
+        productSelect.value=DATA.products.includes(selectedProduct)?selectedProduct:(DATA.products.includes("실내등유")?"실내등유":DATA.products[0]);
+        regionSelect.value=[...regionSelect.options].some(o=>o.value===selectedRegion)?selectedRegion:"00";
+        document.getElementById("asOf").textContent=DATA.asOf;
+        document.getElementById("previousPeriod").textContent=`직전 7일 · ${DATA.periods.previous.start}~${DATA.periods.previous.end}`;
+        document.getElementById("recentPeriod").textContent=`최근 7일 · ${DATA.periods.recent.start}~${DATA.periods.recent.end}`;
+        update();
+      }
+      async function refresh() {
+        let delay=15000;
+        try {
+          const response=await fetch("/api/data",{cache:"no-store"}); const result=await response.json();
+          document.getElementById("connectionWarning").style.display="none";
+          if(result.data) applyData(result.data);
+          const status=result.status||{}; const label={ready:"최신 자료",refreshing:"자료 갱신 중 · 이전 자료 표시",retry_wait:"갱신 실패 · 이전 자료 표시",error:"자료 준비 실패"}[status.status]||"자료 확인 중";
+          document.getElementById("refreshStatus").textContent=result.data?`${label} · ${status.message||""}`:(status.message||label);
+          if(status.status==="refreshing") delay=3000;
+          else if(status.status==="retry_wait") delay=Math.max(5000,Math.min(60000,(Number(status.retryAfter||0)-Date.now()/1000)*1000));
+        } catch (_) { document.getElementById("refreshStatus").textContent="서버에 연결할 수 없습니다."; document.getElementById("connectionWarning").style.display="block"; delay=10000; }
+        window.setTimeout(refresh,delay);
+      }
+      productSelect.addEventListener("change", update);
+      regionSelect.addEventListener("change", update);
+      document.getElementById("emailForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button=document.getElementById("sendMailButton"), status=document.getElementById("mailStatus");
+        button.disabled=true; status.textContent="전송 중입니다…";
+        try {
+          const response=await fetch("/api/email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipient:document.getElementById("mailRecipient").value,subject:document.getElementById("mailSubject").value,body:document.getElementById("mailBody").value})});
+          const result=await response.json(); status.textContent=result.message||"처리 결과를 확인할 수 없습니다.";
+          if(response.ok) document.getElementById("emailForm").reset();
+        } catch (_) { status.textContent="서버 연결을 확인해 주세요."; }
+        finally { button.disabled=false; }
+      });
+      refresh();
+    })();
+  </script>
+</body>
+</html>
